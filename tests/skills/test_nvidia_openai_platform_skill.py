@@ -124,7 +124,7 @@ def test_adds_version_to_existing_skill_without_changing_default(tmp_path):
         calls.append((path, kwargs))
         if path == "/skills/skill_existing/versions":
             assert b'name="files"' in kwargs["body"]
-            assert b'name="default"\\r\\n\\r\\nfalse\\r\\n' in kwargs["body"]
+            assert b'name="default"\r\n\r\nfalse\r\n' in kwargs["body"]
             return {"skill_id": "skill_existing", "version": "2"}
         if path == "/skills/skill_existing/versions/2":
             return {"name": "example-skill"}
