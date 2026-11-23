@@ -50,6 +50,11 @@ jobs:
               ;;
           esac
           test -d "$SKILL_DIR"
+          resolved_dir="$(realpath "$SKILL_DIR")"
+          case "$resolved_dir" in
+            "$GITHUB_WORKSPACE"/*) ;;
+            *) echo "::error::skill_dir must resolve inside the checked-out repository"; exit 2 ;;
+          esac
           python3 optional-skills/mlops/nvidia-openai-platform/scripts/publish_to_openai.py --skill-dir "$SKILL_DIR"
 
       - name: Publish and verify hosted version
