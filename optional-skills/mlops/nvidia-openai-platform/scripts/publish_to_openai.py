@@ -83,7 +83,7 @@ def build_skill_zip(skill_dir: str | Path) -> tuple[bytes, dict[str, Any]]:
     # symlinked parent into an unintended directory.
     for component in (requested_root, *requested_root.parents):
         if component.is_symlink():
-            raise PublishError("Skill directory paths must not contain symlink components.")
+            raise PublishError("Skill directory must not be a symlink; symlink components are not allowed.")
     root = requested_root.resolve(strict=True)
     if not root.is_dir():
         raise PublishError("--skill-dir must point to a directory.")
