@@ -102,6 +102,7 @@ def test_publishes_new_skill_and_verifies_returned_version(tmp_path):
         if path == "/skills":
             assert kwargs["body"].startswith(b"------OpenAISkillBundleBoundary")
             assert b'name="files"' in kwargs["body"]
+            assert b'name="default"' not in kwargs["body"]
             return {"id": "skill_123", "latest_version": "1"}
         if path == "/skills/skill_123/versions/1":
             return {"name": "example-skill", "description": "A reviewed example skill."}
@@ -120,8 +121,10 @@ def test_adds_version_to_existing_skill_without_changing_default(tmp_path):
     calls = []
 
     def fake_request(path, api_key, **kwargs):
-        calls.append(path)
+        calls.append((path, kwargs))
         if path == "/skills/skill_existing/versions":
+            assert b'name="files"' in kwargs["body"]
+            assert b'name="default"\\r\\n\\r\\nfalse\\r\\n' in kwargs["body"]
             return {"skill_id": "skill_existing", "version": "2"}
         if path == "/skills/skill_existing/versions/2":
             return {"name": "example-skill"}
@@ -130,7 +133,7 @@ def test_adds_version_to_existing_skill_without_changing_default(tmp_path):
     with patch.object(module, "_api_request", side_effect=fake_request):
         result = module.publish_skill(archive_bytes, "example-skill", "test-secret", "skill_existing")
     assert result["version"] == "2"
-    assert calls == ["/skills/skill_existing/versions", "/skills/skill_existing/versions/2"]
+    assert [call[0] for call in calls] == ["/skills/skill_existing/versions", "/skills/skill_existing/versions/2"]
 
 
 def test_rejects_symlink_skill_root(tmp_path):
