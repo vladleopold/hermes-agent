@@ -167,15 +167,26 @@ def _api_request(path: str, api_key: str, *, body: bytes | None = None,
         raise PublishError("OpenAI API returned an invalid JSON response.") from exc
 
 
-def _multipart_zip(zip_bytes: bytes, bundle_name: str) -> tuple[bytes, str]:
+def _multipart_zip(
+    zip_bytes: bytes, bundle_name: str, *, default: bool | None = None
+) -> tuple[bytes, str]:
     boundary = "----OpenAISkillBundleBoundary7MA4YWxkTrZu0gW"
     filename = f"{bundle_name}.zip"
-    prefix = (
+    fields = b""
+    if default is not None:
+        value = "true" if default else "false"
+        fields = (
+            f"--{boundary}\r\n"
+            'Content-Disposition: form-data; name="default"\r\n\r\n'
+            f"{value}\r\n"
+        ).encode("ascii")
+    file_part = (
         f"--{boundary}\r\n"
         f'Content-Disposition: form-data; name="files"; filename="{filename}"\r\n'
         "Content-Type: application/zip\r\n\r\n"
     ).encode("utf-8")
-    return prefix + zip_bytes + f"\r\n--{boundary}--\r\n".encode("ascii"), f"multipart/form-data; boundary={boundary}"
+    body = fields + file_part + zip_bytes + f"\r\n--{boundary}--\r\n".encode("ascii")
+    return body, f"multipart/form-data; boundary={boundary}"
 
 
 def publish_skill(zip_bytes: bytes, name: str, api_key: str, skill_id: str | None = None) -> dict[str, Any]:
@@ -183,7 +194,7 @@ def publish_skill(zip_bytes: bytes, name: str, api_key: str, skill_id: str | Non
         path = f"/skills/{urllib.parse.quote(skill_id, safe='')}/versions"
     else:
         path = "/skills"
-    body, content_type = _multipart_zip(zip_bytes, name)
+    body, content_type = _multipart_zip(zip_bytes, name, default=False if skill_id else None)
     uploaded = _api_request(path, api_key, body=body, content_type=content_type)
     result_skill_id = uploaded.get("skill_id") or uploaded.get("id") or skill_id
     version = uploaded.get("version") or uploaded.get("latest_version") or uploaded.get("default_version")
