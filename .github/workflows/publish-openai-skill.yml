@@ -1,0 +1,77 @@
+name: Publish reviewed skill to OpenAI Platform
+
+on:
+  workflow_dispatch:
+    inputs:
+      skill_dir:
+        description: Repository-relative path to one reviewed skill directory
+        required: true
+        default: optional-skills/mlops/nvidia-openai-platform
+        type: string
+      publish:
+        description: Upload to OpenAI (false performs validation only)
+        required: true
+        default: false
+        type: boolean
+      skill_id:
+        description: Existing OpenAI skill ID (leave empty to create a new skill)
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: openai-skill-publish
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    environment: openai-skills-publish
+    steps:
+      - name: Check out reviewed main branch
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          ref: ${{ github.sha }}
+
+      - name: Validate and package skill (dry-run)
+        id: validate
+        env:
+          SKILL_DIR: ${{ inputs.skill_dir }}
+        run: |
+          set -euo pipefail
+          case "$SKILL_DIR" in
+            ""|/*|..|../*|*/../*|*/..)
+              echo "::error::skill_dir must be a safe repository-relative path"
+              exit 2
+              ;;
+          esac
+          test -d "$SKILL_DIR"
+          python3 optional-skills/mlops/nvidia-openai-platform/scripts/publish_to_openai.py --skill-dir "$SKILL_DIR"
+
+      - name: Publish and verify hosted version
+        if: inputs.publish
+        id: publish
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          SKILL_DIR: ${{ inputs.skill_dir }}
+          SKILL_ID: ${{ inputs.skill_id }}
+        run: |
+          set -euo pipefail
+          if [ -z "$OPENAI_API_KEY" ]; then
+            echo "::error::Configure OPENAI_API_KEY in the openai-skills-publish GitHub environment"
+            exit 2
+          fi
+          args=(--skill-dir "$SKILL_DIR" --publish)
+          if [ -n "$SKILL_ID" ]; then
+            args+=(--skill-id "$SKILL_ID")
+          fi
+          result="$(python3 optional-skills/mlops/nvidia-openai-platform/scripts/publish_to_openai.py "${args[@]}")"
+          printf '%s\n' "$result"
+          skill_id="$(python3 -c 'import json,sys; print(json.load(sys.stdin)["skill_id"])' <<< "$result")"
+          version="$(python3 -c 'import json,sys; print(json.load(sys.stdin)["version"])' <<< "$result")"
+          echo "skill_id=$skill_id" >> "$GITHUB_OUTPUT"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
