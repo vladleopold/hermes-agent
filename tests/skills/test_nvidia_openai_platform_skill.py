@@ -131,3 +131,11 @@ def test_adds_version_to_existing_skill_without_changing_default(tmp_path):
         result = module.publish_skill(archive_bytes, "example-skill", "test-secret", "skill_existing")
     assert result["version"] == "2"
     assert calls == ["/skills/skill_existing/versions", "/skills/skill_existing/versions/2"]
+
+
+def test_rejects_symlink_skill_root(tmp_path):
+    real_skill = make_skill(tmp_path)
+    alias = tmp_path / "skill-alias"
+    alias.symlink_to(real_skill, target_is_directory=True)
+    with pytest.raises(module.PublishError, match="must not be a symlink"):
+        module.build_skill_zip(alias)
