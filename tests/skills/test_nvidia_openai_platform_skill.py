@@ -142,3 +142,12 @@ def test_rejects_symlink_skill_root(tmp_path):
     alias.symlink_to(real_skill, target_is_directory=True)
     with pytest.raises(module.PublishError, match="must not be a symlink"):
         module.build_skill_zip(alias)
+
+def test_rejects_symlinked_parent_of_skill_root(tmp_path):
+    real_parent = tmp_path / "real-parent"
+    real_parent.mkdir()
+    skill = make_skill(real_parent)
+    alias_parent = tmp_path / "alias-parent"
+    alias_parent.symlink_to(real_parent, target_is_directory=True)
+    with pytest.raises(module.PublishError, match="symlink components"):
+        module.build_skill_zip(alias_parent / skill.name)
