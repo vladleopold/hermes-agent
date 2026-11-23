@@ -46,7 +46,7 @@ python3 scripts/publish_to_openai.py --skill-dir /absolute/path/to/installed/ski
 Publish a new hosted skill only when explicitly requested:
 
 ```bash
-OPENAI_API_KEY is supplied by the protected runtime environment
+# OPENAI_API_KEY is injected by the protected runtime secret manager.
 python3 scripts/publish_to_openai.py --skill-dir /absolute/path/to/installed/skill --publish
 ```
 
