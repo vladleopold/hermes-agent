@@ -78,8 +78,12 @@ def _manifest(skill_dir: Path) -> tuple[str, str]:
 def build_skill_zip(skill_dir: str | Path) -> tuple[bytes, dict[str, Any]]:
     """Validate a skill folder and return its ZIP bytes plus safe metadata."""
     requested_root = Path(skill_dir).expanduser()
-    if requested_root.is_symlink():
-        raise PublishError("The skill directory itself must not be a symlink.")
+    # Reject symlinked path components, not only a symlink at the leaf.
+    # Otherwise a seemingly ordinary skill path could resolve through a
+    # symlinked parent into an unintended directory.
+    for component in (requested_root, *requested_root.parents):
+        if component.is_symlink():
+            raise PublishError("Skill directory paths must not contain symlink components.")
     root = requested_root.resolve(strict=True)
     if not root.is_dir():
         raise PublishError("--skill-dir must point to a directory.")
