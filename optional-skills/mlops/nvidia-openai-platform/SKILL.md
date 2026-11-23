@@ -58,6 +58,10 @@ python3 scripts/publish_to_openai.py --skill-dir /absolute/path/to/installed/ski
 
 The publisher never changes an existing skill's default version and never deletes a skill. It waits for the uploaded version to become retrievable before reporting success. Keep the returned `skill_id` and `version` in deployment configuration.
 
+## Publish from GitHub Actions
+
+The repository includes a protected, manual workflow at `.github/workflows/publish-openai-skill.yml`. Configure the GitHub Actions environment named `openai-skills-publish` and add `OPENAI_API_KEY` as an environment secret. Then run **Actions → Publish reviewed skill to OpenAI Platform** on `main`. The default input performs validation only; set `publish=true` to upload. Supply a repository-relative `skill_dir` for the reviewed NVIDIA skill. To create a new version, also provide the existing `skill_id`. The workflow refuses non-main refs and paths that resolve outside the checked-out repository. Keep environment approval rules enabled for production credentials.
+
 ## Attach to the Responses API
 
 Attach only reviewed skill IDs and pin an explicit version:
