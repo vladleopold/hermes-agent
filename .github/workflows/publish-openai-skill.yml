@@ -6,7 +6,7 @@ on:
       skill_dir:
         description: Repository-relative path to one reviewed skill directory
         required: true
-        default: optional-skills/mlops/nvidia-openai-platform
+        default: ""
         type: string
       publish:
         description: Upload to OpenAI (false performs validation only)
