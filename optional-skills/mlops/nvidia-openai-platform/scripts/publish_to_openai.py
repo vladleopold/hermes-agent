@@ -77,7 +77,10 @@ def _manifest(skill_dir: Path) -> tuple[str, str]:
 
 def build_skill_zip(skill_dir: str | Path) -> tuple[bytes, dict[str, Any]]:
     """Validate a skill folder and return its ZIP bytes plus safe metadata."""
-    root = Path(skill_dir).expanduser().resolve(strict=True)
+    requested_root = Path(skill_dir).expanduser()
+    if requested_root.is_symlink():
+        raise PublishError("The skill directory itself must not be a symlink.")
+    root = requested_root.resolve(strict=True)
     if not root.is_dir():
         raise PublishError("--skill-dir must point to a directory.")
 
