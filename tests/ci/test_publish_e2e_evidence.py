@@ -189,3 +189,25 @@ def test_find_review_comment_requires_the_evidence_marker():
 def test_replace_evidence_marker_requires_exactly_one_marker():
     with pytest.raises(ValueError, match="does not contain one"):
         _mod.replace_evidence_marker("no marker", "evidence")
+
+def test_main_skips_optional_inline_upload_without_session_token(monkeypatch, capsys):
+    monkeypatch.setenv("GITHUB_TOKEN", "github-token")
+    monkeypatch.delenv("GH_SESSION_TOKEN", raising=False)
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "publish_e2e_evidence.py",
+            "--evidence-dir", "/tmp/e2e-evidence",
+            "--source-repo", "NousResearch/hermes-agent",
+            "--pr-number", "69868",
+        ],
+    )
+    monkeypatch.setattr(
+        _mod,
+        "publish",
+        lambda *args: pytest.fail("inline evidence must be skipped without the optional session token"),
+    )
+
+    assert _mod.main() == 0
+    assert "skipping optional inline image attachments" in capsys.readouterr().err
