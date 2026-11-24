@@ -319,7 +319,12 @@ def main() -> int:
         parser.error("GITHUB_TOKEN is required")
     session_token = os.environ.get("GH_SESSION_TOKEN", "")
     if not session_token:
-        parser.error("GH_SESSION_TOKEN is required")
+        print(
+            "GH_SESSION_TOKEN is not configured; skipping optional inline image attachments. "
+            "The E2E evidence remains available as a workflow artifact.",
+            file=sys.stderr,
+        )
+        return 0
     publish(token, args.source_repo, args.evidence_dir, args.pr_number, session_token)
     return 0
 
